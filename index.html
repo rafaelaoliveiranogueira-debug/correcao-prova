@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escola Estadual São Tomaz de Aquino - Leitor de Gabaritos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .qr-box img, .qr-box canvas { width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen flex flex-col font-sans pb-12">
+
+  <!-- CABEÇALHO FIXO DA ESCOLA -->
+  <header class="bg-blue-900 text-white shadow-lg p-4 sticky top-0 z-40">
+    <div class="max-w-4xl mx-auto text-center">
+      <h1 class="text-xl md:text-2xl font-bold tracking-wide uppercase">Escola Estadual São Tomaz de Aquino</h1>
+      <p class="text-xs text-blue-200 mt-1">Sistema de Gestão de Avaliações e Leitura de Gabaritos</p>
+    </div>
+  </header>
+
+  <!-- NAVEGAÇÃO -->
+  <nav class="bg-blue-800 text-white shadow-md">
+    <div class="max-w-4xl mx-auto flex overflow-x-auto text-sm font-semibold">
+      <button onclick="switchTab('turmas')" id="btn-turmas" class="tab-btn flex-1 py-3 px-4 text-center border-b-4 border-yellow-400 bg-blue-900">
+        <i class="fa-solid fa-users mr-1"></i> Turmas
+      </button>
+      <button onclick="switchTab('alunos')" id="btn-alunos" class="tab-btn flex-1 py-3 px-4 text-center border-b-4 border-transparent hover:bg-blue-700">
+        <i class="fa-solid fa-user-graduate mr-1"></i> Alunos
+      </button>
+      <button onclick="switchTab('provas')" id="btn-provas" class="tab-btn flex-1 py-3 px-4 text-center border-b-4 border-transparent hover:bg-blue-700">
+        <i class="fa-solid fa-file-lines mr-1"></i> Provas
+      </button>
+      <button onclick="switchTab('scanner')" id="btn-scanner" class="tab-btn flex-1 py-3 px-4 text-center border-b-4 border-transparent hover:bg-blue-700">
+        <i class="fa-solid fa-qrcode mr-1"></i> Leitor
+      </button>
+      <button onclick="switchTab('relatorios')" id="btn-relatorios" class="tab-btn flex-1 py-3 px-4 text-center border-b-4 border-transparent hover:bg-blue-700">
+        <i class="fa-solid fa-square-poll-vertical mr-1"></i> Notas
+      </button>
+    </div>
+  </nav>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="max-w-4xl mx-auto w-full p-4 flex-grow">
+
+    <!-- TAB 1: TURMAS -->
+    <section id="tab-turmas" class="tab-content space-y-6">
+      <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-600">
+        <h2 class="text-lg font-bold text-blue-900 mb-4 flex items-center">
+          <i class="fa-solid fa-folder-plus mr-2"></i> Cadastrar / Editar Turma
+        </h2>
+        <form id="form-turma" onsubmit="salvarTurma(event)" class="space-y-4">
+          <input type="hidden" id="turma-id">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Turma / Sala</label>
+            <input type="text" id="turma-nome" required placeholder="Ex: 8º Ano A, 801, 9º B" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div class="flex gap-2">
+            <button type="submit" class="flex-1 bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-lg font-semibold shadow transition">
+              <i class="fa-solid fa-save mr-1"></i> Salvar Turma
+            </button>
+            <button type="button" onclick="limparFormTurma()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-3 rounded-lg font-semibold transition">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-md font-bold text-gray-700 mb-3 border-b pb-2">Turmas Cadastradas (Ordem Numérica/Alfabética)</h3>
+        <div id="lista-turmas" class="divide-y divide-gray-200"></div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ALUNOS -->
+    <section id="tab-alunos" class="tab-content hidden space-y-6">
+      <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-600">
+        <h2 class="text-lg font-bold text-blue-900 mb-4 flex items-center">
+          <i class="fa-solid fa-user-plus mr-2"></i> Cadastrar / Editar Aluno
+        </h2>
+        <form id="form-aluno" onsubmit="salvarAluno(event)" class="space-y-4">
+          <input type="hidden" id="aluno-id">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Turma do Aluno</label>
+            <select id="aluno-turma-select" required class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"></select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo do Aluno</label>
+            <input type="text" id="aluno-nome" required placeholder="Ex: Ana Maria Silva" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div class="flex gap-2">
+            <button type="submit" class="flex-1 bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-lg font-semibold shadow transition">
+              <i class="fa-solid fa-user-check mr-1"></i> Salvar Aluno
+            </button>
+            <button type="button" onclick="limparFormAluno()" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-3 rounded-lg font-semibold transition">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="flex justify-between items-center mb-3 border-b pb-2">
+          <h3 class="text-md font-bold text-gray-700">Alunos por Turma (Ordem Alfabética)</h3>
+          <select id="filtro-turma-aluno" onchange="renderAlunos()" class="p-2 border rounded-lg text-sm bg-gray-50"></select>
+        </div>
+        <div id="lista-alunos" class="divide-y divide-gray-200"></div>
+      </div>
+    </section>
+
+    <!-- TAB 3: PROVAS -->
+    <section id="tab-provas" class="tab-content hidden space-y-6">
+      <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-600">
+        <h2 class="text-lg font-bold text-blue-900 mb-4 flex items-center">
+          <i class="fa-solid fa-file-pen mr-2"></i> Cadastrar Avaliação & Gabarito Oficial
+        </h2>
+        <form id="form-prova" onsubmit="salvarProva(event)" class="space-y-4">
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Nome da Avaliação</label>
+              <input type="text" id="prova-nome" required placeholder="Ex: Avaliação de Matemática - 3º Bimestre" class="w-full p-3 border border-gray-300 rounded-lg">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Valor Total da Prova (Pontos)</label>
+              <input type="number" step="0.1" min="0.1" id="prova-valor" required placeholder="Ex: 10.0" class="w-full p-3 border border-gray-300 rounded-lg">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Aplicar para as Turmas:</label>
+            <div id="checkboxes-turmas" class="flex flex-wrap gap-3 p-3 border rounded-lg bg-gray-50"></div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Opções por Questão</label>
+              <select id="prova-opcoes-qtd" onchange="gerarCamposGabarito(); atualizarPreview();" class="w-full p-3 border rounded-lg">
+                <option value="4">4 Opções (A, B, C, D)</option>
+                <option value="5" selected>5 Opções (A, B, C, D, E)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Formato Visual</label>
+              <select id="prova-formato" onchange="atualizarPreview()" class="w-full p-3 border rounded-lg">
+                <option value="circulo" selected>Círculos</option>
+                <option value="quadrado">Quadrados</option>
+                <option value="elipse">Elipses</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Número de Colunas</label>
+              <select id="prova-colunas" onchange="atualizarPreview()" class="w-full p-3 border rounded-lg">
+                <option value="1">1 Coluna</option>
+                <option value="2" selected>2 Colunas</option>
+                <option value="3">3 Colunas</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Quantidade de Questões (1 a 100)</label>
+            <input type="number" id="prova-num-questoes" min="1" max="100" value="10" oninput="gerarCamposGabarito(); atualizarPreview();" class="w-full p-3 border rounded-lg">
+          </div>
+
+          <div class="bg-gray-50 p-4 rounded-lg border">
+            <h4 class="font-bold text-gray-700 mb-2">Definir Respostas Corretas (Gabarito Oficial)</h4>
+            <div id="container-gabarito-respostas" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
+          </div>
+
+          <div class="bg-white p-4 rounded-lg border shadow-inner">
+            <h4 class="font-bold mb-2 flex items-center text-blue-900">
+              <i class="fa-solid fa-eye mr-2"></i> Pré-visualização em Tempo Real
+            </h4>
+            <div id="live-preview" class="border p-4 bg-white min-h-[200px]"></div>
+          </div>
+
+          <button type="submit" class="w-full bg-blue-700 hover:bg-blue-800 text-white py-3 rounded-lg font-bold shadow-lg transition">
+            <i class="fa-solid fa-save mr-2"></i> Salvar Prova
+          </button>
+        </form>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-md font-bold text-gray-700 mb-3 border-b pb-2">Provas Cadastradas</h3>
+        <div id="lista-provas" class="divide-y divide-gray-200"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: LEITOR -->
+    <section id="tab-scanner" class="tab-content hidden space-y-6">
+      <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-600 text-center">
+        <h2 class="text-lg font-bold text-blue-900 mb-2 flex items-center justify-center">
+          <i class="fa-solid fa-camera mr-2"></i> Leitor Óptico de Gabaritos
+        </h2>
+        <p class="text-xs text-gray-500 mb-4">Etapa 1: QR Code | Etapa 2: Confirmação | Etapa 3: Foto da folha inteira e leitura</p>
+
+        <div class="relative max-w-sm mx-auto bg-black rounded-lg overflow-hidden shadow-inner min-h-[260px] flex items-center justify-center">
+          <video id="webcam" class="w-full h-auto" playsinline muted></video>
+          <canvas id="scanner-canvas" class="hidden"></canvas>
+
+          <div id="overlay-guide" class="absolute inset-0 border-4 border-dashed border-yellow-400 opacity-60 pointer-events-none m-4 rounded-lg flex items-start justify-center">
+            <span id="overlay-texto" class="bg-black/70 text-white text-xs px-2 py-1 rounded shadow mt-2">Aponte para o QR Code</span>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap justify-center gap-3">
+          <button id="btn-iniciar-camera" onclick="iniciarLeitorEtapa1()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold shadow flex items-center">
+            <i class="fa-solid fa-play mr-2"></i> Abrir Câmera
+          </button>
+          <button id="btn-capturar" onclick="capturarELerRespostas()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold shadow hidden items-center">
+            <i class="fa-solid fa-camera-retro mr-2"></i> Capturar e Ler Respostas
+          </button>
+          <button id="btn-parar-camera" onclick="pararCamera()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold shadow hidden items-center">
+            <i class="fa-solid fa-stop mr-2"></i> Parar
+          </button>
+        </div>
+
+        <div id="scanner-status" class="mt-4 p-3 bg-blue-50 text-blue-800 text-sm font-semibold rounded-lg border border-blue-200">
+          Aguardando início da leitura...
+        </div>
+
+        <div id="resultado-wrap" class="hidden mt-4">
+          <p class="text-xs text-gray-500 mb-1">Verde = marcada · Cinza = vazia · Quadrados vermelhos = marcadores de canto detectados</p>
+          <canvas id="resultado-canvas" class="w-full max-w-sm mx-auto border rounded"></canvas>
+          <div id="resultado-detalhes" class="text-xs text-left max-w-sm mx-auto mt-2 grid grid-cols-4 gap-1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: RELATÓRIOS -->
+    <section id="tab-relatorios" class="tab-content hidden space-y-6">
+      <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-600">
+        <h2 class="text-lg font-bold text-blue-900 mb-4 flex items-center">
+          <i class="fa-solid fa-table mr-2"></i> Planilhas de Desempenho e Notas
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Selecione a Prova</label>
+            <select id="relatorio-prova-select" onchange="renderRelatorioNotas()" class="w-full p-3 border rounded-lg bg-gray-50"></select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Selecione a Turma</label>
+            <select id="relatorio-turma-select" onchange="renderRelatorioNotas()" class="w-full p-3 border rounded-lg bg-gray-50"></select>
+          </div>
+        </div>
+
+        <div class="flex justify-end mb-4">
+          <button onclick="gerarPDFPlanilhaNotas()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-semibold text-sm shadow flex items-center">
+            <i class="fa-solid fa-file-pdf mr-2"></i> Exportar Planilha em PDF
+          </button>
+        </div>
+
+        <div id="area-planilha-pdf" class="bg-white p-6 border rounded-lg">
+          <div class="text-center border-b pb-4 mb-4">
+            <h2 class="text-xl font-bold text-blue-900 uppercase">Escola Estadual São Tomaz de Aquino</h2>
+            <h3 id="relatorio-header-turma" class="text-md font-semibold text-gray-700 mt-1">Turma: -</h3>
+            <h4 id="relatorio-header-prova" class="text-sm text-gray-500">Avaliação: -</h4>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse border border-gray-300 text-sm">
+              <thead>
+                <tr class="bg-blue-100 text-blue-900">
+                  <th class="border border-gray-300 p-2 text-center w-12">#</th>
+                  <th class="border border-gray-300 p-3">Nome Completo do Aluno</th>
+                  <th class="border border-gray-300 p-3 text-center">Status</th>
+                  <th class="border border-gray-300 p-3 text-center">Acertos</th>
+                  <th class="border border-gray-300 p-3 text-center">Nota / Valor</th>
+                </tr>
+              </thead>
+              <tbody id="tabela-notas-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: CONFIRMAÇÃO DO ALUNO -->
+  <div id="modal-confirmacao" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-center space-y-4">
+      <div class="w-16 h-16 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center mx-auto text-2xl">
+        <i class="fa-solid fa-user-check"></i>
+      </div>
+      <h3 class="text-lg font-bold text-gray-800">Confirmar Aluno e Avaliação</h3>
+      <div class="bg-gray-50 p-4 rounded-lg text-left text-sm space-y-2 border">
+        <p><strong>Escola:</strong> Escola Estadual São Tomaz de Aquino</p>
+        <p><strong>Aluno:</strong> <span id="modal-aluno-nome" class="text-blue-900 font-bold"></span></p>
+        <p><strong>Turma:</strong> <span id="modal-aluno-turma" class="font-semibold"></span></p>
+        <p><strong>Avaliação:</strong> <span id="modal-prova-nome" class="font-semibold"></span></p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="confirmarAlunoEProcederLeitura()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold transition">
+          Confirmar & Ler Respostas
+        </button>
+        <button onclick="cancelarConfirmacaoModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-3 rounded-lg font-semibold transition">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERLAY "GERANDO PDF" -->
+  <div id="overlay-pdf" class="fixed inset-0 bg-white z-[9999] hidden items-center justify-center">
+    <div class="text-center text-blue-900 font-bold text-lg">
+      <i class="fa-solid fa-spinner fa-spin text-3xl mb-3"></i><br>Gerando PDF dos gabaritos...
+    </div>
+  </div>
+
+  <!-- CONTAINER PARA IMPRESSÃO DOS GABARITOS A4 (fica atrás do overlay durante a geração) -->
+  <div id="impressao-gabaritos-container" style="display:none; position:absolute; top:0; left:0; z-index:50; background:#fff;"></div>
+
+  <script>
+    const El = id => document.getElementById(id);
+
+    // Banner visível para erros e avisos (alert pode ser bloqueado em alguns ambientes)
+    function mostrarAviso(msg, cor) {
+      let b = document.getElementById('banner-aviso');
+      if (!b) {
+        b = document.createElement('div');
+        b.id = 'banner-aviso';
+        b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;padding:10px 14px;font:13px Arial;color:#fff;';
+        document.body.appendChild(b);
+      }
+      b.style.background = cor || '#b91c1c';
+      b.textContent = msg;
+    }
+    window.addEventListener('error', e => mostrarAviso('Erro no sistema: ' + e.message + ' (linha ' + e.lineno + ')'));
+    window.addEventListener('unhandledrejection', e => mostrarAviso('Erro: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)));
+
+
+    // Escapa texto digitado pelo usuário antes de usar em innerHTML
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    function lerLS(chave) {
+      try { return JSON.parse(localStorage.getItem(chave)) || []; } catch (e) { return []; }
+    }
+
+    // ESTADO GLOBAL (localStorage)
+    let state = {
+      turmas: lerLS('sta_turmas'),
+      alunos: lerLS('sta_alunos'),
+      provas: lerLS('sta_provas'),
+      respostas: lerLS('sta_respostas')
+    };
+
+    function salvarEstado() {
+      try {
+        localStorage.setItem('sta_turmas', JSON.stringify(state.turmas));
+        localStorage.setItem('sta_alunos', JSON.stringify(state.alunos));
+        localStorage.setItem('sta_provas', JSON.stringify(state.provas));
+        localStorage.setItem('sta_respostas', JSON.stringify(state.respostas));
+      } catch (e) {
+        mostrarAviso('Atenção: este navegador/ambiente bloqueia o armazenamento local. Os dados valem só até fechar ou recarregar a página. Abra o arquivo direto no Chrome/Edge para salvar de forma permanente.', '#b45309');
+      }
+    }
+
+    const ordenarTurmas = arr => [...arr].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { numeric: true, sensitivity: 'base' }));
+
+    // CONTROLADOR DE ABAS
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-yellow-400', 'bg-blue-900');
+        btn.classList.add('border-transparent');
+      });
+
+      El(`tab-${tabId}`).classList.remove('hidden');
+      const activeBtn = El(`btn-${tabId}`);
+      activeBtn.classList.add('border-yellow-400', 'bg-blue-900');
+      activeBtn.classList.remove('border-transparent');
+
+      if (tabId !== 'scanner') pararCamera();
+
+      if (tabId === 'turmas') renderTurmas();
+      if (tabId === 'alunos') { populateTurmasSelects(); renderAlunos(); }
+      if (tabId === 'provas') { renderCheckboxesTurmas(); renderProvas(); gerarCamposGabarito(); atualizarPreview(); }
+      if (tabId === 'relatorios') { populateRelatoriosSelects(); renderRelatorioNotas(); }
+    }
+
+    // =========================================================================
+    // 1. TURMAS
+    // =========================================================================
+    function salvarTurma(e) {
+      e.preventDefault();
+      const id = El('turma-id').value;
+      const nome = El('turma-nome').value.trim();
+      if (!nome) return;
+
+      if (id) {
+        const t = state.turmas.find(t => t.id === id);
+        if (t) t.nome = nome;
+      } else {
+        state.turmas.push({ id: 'turma_' + Date.now(), nome });
+      }
+      salvarEstado();
+      limparFormTurma();
+      renderTurmas();
+    }
+
+    function editarTurma(id) {
+      const turma = state.turmas.find(t => t.id === id);
+      if (turma) {
+        El('turma-id').value = turma.id;
+        El('turma-nome').value = turma.nome;
+        El('turma-nome').focus();
+      }
+    }
+
+    function excluirTurma(id) {
+      if (confirm('Deseja excluir esta turma? Os alunos permanecerão cadastrados, mas perderão a referência de sala.')) {
+        state.turmas = state.turmas.filter(t => t.id !== id);
+        state.provas.forEach(p => { p.turmasIds = p.turmasIds.filter(t => t !== id); });
+        salvarEstado();
+        renderTurmas();
+      }
+    }
+
+    function limparFormTurma() {
+      El('turma-id').value = '';
+      El('turma-nome').value = '';
+    }
+
+    function renderTurmas() {
+      const container = El('lista-turmas');
+      container.innerHTML = '';
+      const lista = ordenarTurmas(state.turmas);
+
+      if (lista.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500 py-4 text-center">Nenhuma turma cadastrada.</p>';
+        return;
+      }
+
+      lista.forEach(t => {
+        const div = document.createElement('div');
+        div.className = 'py-3 flex justify-between items-center';
+        div.innerHTML = `
+          <span class="font-semibold text-gray-800"><i class="fa-solid fa-users text-blue-600 mr-2"></i>${esc(t.nome)}</span>
+          <div class="space-x-2">
+            <button onclick="editarTurma('${t.id}')" class="text-blue-600 hover:text-blue-800 text-sm font-semibold"><i class="fa-solid fa-pen"></i> Editar</button>
+            <button onclick="excluirTurma('${t.id}')" class="text-red-600 hover:text-red-800 text-sm font-semibold"><i class="fa-solid fa-trash"></i> Excluir</button>
+          </div>`;
+        container.appendChild(div);
+      });
+    }
+
+    // =========================================================================
+    // 2. ALUNOS
+    // =========================================================================
+    function populateTurmasSelects() {
+      const selectAluno = El('aluno-turma-select');
+      const selectFiltro = El('filtro-turma-aluno');
+      const valAluno = selectAluno.value;
+      const valFiltro = selectFiltro.value;
+
+      const optionsHTML = ordenarTurmas(state.turmas).map(t => `<option value="${t.id}">${esc(t.nome)}</option>`).join('');
+      selectAluno.innerHTML = optionsHTML || '<option value="">Cadastre uma turma primeiro</option>';
+      selectFiltro.innerHTML = '<option value="TODAS">Todas as Turmas</option>' + optionsHTML;
+
+      if (valAluno) selectAluno.value = valAluno;
+      if (valFiltro) selectFiltro.value = valFiltro;
+    }
+
+    function salvarAluno(e) {
+      e.preventDefault();
+      const id = El('aluno-id').value;
+      const turmaId = El('aluno-turma-select').value;
+      const nome = El('aluno-nome').value.trim();
+      if (!nome || !turmaId) return;
+
+      if (id) {
+        const a = state.alunos.find(a => a.id === id);
+        if (a) { a.nome = nome; a.turmaId = turmaId; }
+      } else {
+        state.alunos.push({ id: 'aluno_' + Date.now() + '_' + Math.floor(Math.random() * 1000), turmaId, nome });
+      }
+      salvarEstado();
+      limparFormAluno();
+      renderAlunos();
+    }
+
+    function editarAluno(id) {
+      const aluno = state.alunos.find(a => a.id === id);
+      if (aluno) {
+        El('aluno-id').value = aluno.id;
+        El('aluno-turma-select').value = aluno.turmaId;
+        El('aluno-nome').value = aluno.nome;
+        El('aluno-nome').focus();
+      }
+    }
+
+    function excluirAluno(id) {
+      if (confirm('Excluir este aluno? As notas salvas também serão apagadas.')) {
+        state.alunos = state.alunos.filter(a => a.id !== id);
+        state.respostas = state.respostas.filter(r => r.alunoId !== id);
+        salvarEstado();
+        renderAlunos();
+      }
+    }
+
+    function limparFormAluno() {
+      El('aluno-id').value = '';
+      El('aluno-nome').value = '';
+    }
+
+    function renderAlunos() {
+      const container = El('lista-alunos');
+      const filtroTurmaId = El('filtro-turma-aluno').value;
+      container.innerHTML = '';
+
+      // CORREÇÃO: cópia do array para o sort não alterar o state.alunos
+      let lista = [...state.alunos];
+      if (filtroTurmaId && filtroTurmaId !== 'TODAS') {
+        lista = lista.filter(a => a.turmaId === filtroTurmaId);
+      }
+      lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+      if (lista.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500 py-4 text-center">Nenhum aluno encontrado.</p>';
+        return;
+      }
+
+      lista.forEach(a => {
+        const turma = state.turmas.find(t => t.id === a.turmaId);
+        const div = document.createElement('div');
+        div.className = 'py-3 flex justify-between items-center';
+        div.innerHTML = `
+          <div>
+            <p class="font-semibold text-gray-800">${esc(a.nome)}</p>
+            <p class="text-xs text-gray-500">Turma: ${turma ? esc(turma.nome) : 'Sem Turma'}</p>
+          </div>
+          <div class="space-x-2">
+            <button onclick="editarAluno('${a.id}')" class="text-blue-600 hover:text-blue-800 text-sm font-semibold"><i class="fa-solid fa-pen"></i> Editar</button>
+            <button onclick="excluirAluno('${a.id}')" class="text-red-600 hover:text-red-800 text-sm font-semibold"><i class="fa-solid fa-trash"></i> Excluir</button>
+          </div>`;
+        container.appendChild(div);
+      });
+    }
+
+    // =========================================================================
+    // 3. PROVAS & PREVIEW
+    // =========================================================================
+    function renderCheckboxesTurmas() {
+      const container = El('checkboxes-turmas');
+      const marcadas = new Set(Array.from(document.querySelectorAll('.turma-checkbox:checked')).map(cb => cb.value));
+      container.innerHTML = '';
+
+      if (state.turmas.length === 0) {
+        container.innerHTML = '<p class="text-xs text-red-500">Nenhuma turma cadastrada. Cadastre turmas primeiro.</p>';
+        return;
+      }
+
+      ordenarTurmas(state.turmas).forEach(t => {
+        const label = document.createElement('label');
+        label.className = 'inline-flex items-center text-sm cursor-pointer bg-white px-3 py-1.5 border rounded shadow-sm';
+        label.innerHTML = `
+          <input type="checkbox" value="${t.id}" class="turma-checkbox h-4 w-4 rounded" ${marcadas.has(t.id) ? 'checked' : ''}>
+          <span class="ml-2 text-gray-700">${esc(t.nome)}</span>`;
+        container.appendChild(label);
+      });
+    }
+
+    function gerarCamposGabarito() {
+      let qtd = parseInt(El('prova-num-questoes').value) || 1;
+      qtd = Math.max(1, Math.min(100, qtd));
+      const numOpcoes = parseInt(El('prova-opcoes-qtd').value) || 5;
+      const container = El('container-gabarito-respostas');
+
+      // preserva respostas já escolhidas
+      const anteriores = {};
+      container.querySelectorAll('.gabarito-resposta-select').forEach(s => { anteriores[s.dataset.questao] = s.value; });
+      container.innerHTML = '';
+
+      const letras = ['A', 'B', 'C', 'D', 'E'].slice(0, numOpcoes);
+      for (let i = 1; i <= qtd; i++) {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-2 border rounded bg-white';
+        div.innerHTML = `
+          <span class="text-xs font-bold text-gray-700">Q${i}:</span>
+          <select data-questao="${i}" class="gabarito-resposta-select text-sm p-1 border rounded font-semibold bg-gray-50">
+            ${letras.map(l => `<option value="${l}">${l}</option>`).join('')}
+          </select>`;
+        container.appendChild(div);
+        const sel = div.querySelector('select');
+        if (anteriores[i] && letras.includes(anteriores[i])) sel.value = anteriores[i];
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // GEOMETRIA DA FOLHA (em mm) — usada tanto para IMPRIMIR quanto para LER
+    // ---------------------------------------------------------------------
+    const FOLHA = {
+      marcadorTam: 10,
+      // centros dos 4 marcadores de canto: TL, TR, BR, BL
+      marcadores: [[13, 13], [197, 13], [197, 284], [13, 284]],
+      topo: 55,
+      base: 268,
+      margemX: 20,
+      deslocX: 14,     // do início da coluna até o centro da 1ª bolha
+      espacoBolha: 9,
+      qr: { x: 158, y: 14, tam: 28 }
+    };
+
+    function dimensoesBolha(formato) {
+      if (formato === 'elipse') return { w: 7, h: 4 };
+      return { w: 5, h: 5 };
+    }
+
+    function layoutProva(p) {
+      const cols = p.colunas;
+      const linhasPorCol = Math.ceil(p.numQuestoes / cols);
+      const alturaLinha = Math.min(8, (FOLHA.base - FOLHA.topo) / linhasPorCol);
+      const larguraCol = (210 - 2 * FOLHA.margemX) / cols;
+      return { cols, linhasPorCol, alturaLinha, larguraCol };
+    }
+
+    function centroBolha(p, lay, q, j) {
+      const col = Math.floor((q - 1) / lay.linhasPorCol);
+      const linha = (q - 1) % lay.linhasPorCol;
+      return {
+        x: FOLHA.margemX + col * lay.larguraCol + FOLHA.deslocX + j * FOLHA.espacoBolha,
+        y: FOLHA.topo + linha * lay.alturaLinha + lay.alturaLinha / 2
+      };
+    }
+
+    function atualizarPreview() {
+      let qtd = parseInt(El('prova-num-questoes').value) || 10;
+      qtd = Math.max(1, Math.min(100, qtd));
+      const numOpcoes = parseInt(El('prova-opcoes-qtd').value) || 5;
+      const formato = El('prova-formato').value;
+      const colunas = parseInt(El('prova-colunas').value) || 2;
+      const letras = ['A', 'B', 'C', 'D', 'E'].slice(0, numOpcoes);
+
+      let shape = 'width:16px;height:16px;border-radius:50%;';
+      if (formato === 'quadrado') shape = 'width:16px;height:16px;border-radius:0;';
+      if (formato === 'elipse') shape = 'width:22px;height:12px;border-radius:50%;';
+
+      const porCol = Math.ceil(qtd / colunas);
+      const aviso = (Math.min(8, (FOLHA.base - FOLHA.topo) / porCol) < 5.5)
+        ? '<p class="text-xs text-red-600 font-semibold mb-2">⚠ Muitas questões para este número de colunas: aumente as colunas.</p>' : '';
+
+      let colsHTML = '';
+      for (let c = 0; c < colunas; c++) {
+        let linhas = '';
+        for (let i = c * porCol + 1; i <= Math.min(qtd, (c + 1) * porCol); i++) {
+          linhas += `
+            <div style="display:flex;align-items:center;gap:6px;padding:2px 0;">
+              <span style="font-size:10px;font-weight:bold;width:22px;text-align:right;">${i}.</span>
+              ${letras.map(() => `<div style="border:1.5px solid #444;${shape}"></div>`).join('')}
+            </div>`;
+        }
+        colsHTML += `
+          <div>
+            <div style="display:flex;gap:6px;padding-left:28px;font-size:9px;color:#666;">
+              ${letras.map(l => `<span style="width:${formato === 'elipse' ? 22 : 16}px;text-align:center;">${l}</span>`).join('')}
+            </div>
+            ${linhas}
+          </div>`;
+      }
+
+      El('live-preview').innerHTML = `
+        ${aviso}
+        <div class="text-center border-b pb-2 mb-2">
+          <p class="text-xs font-bold uppercase">Escola Estadual São Tomaz de Aquino</p>
+          <p class="text-[10px] text-gray-600">NOME DA AVALIAÇÃO - NOME DO ALUNO</p>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(${colunas},1fr);gap:16px;">${colsHTML}</div>`;
+    }
+
+    function salvarProva(e) {
+      e.preventDefault();
+      const nome = El('prova-nome').value.trim();
+      const valor = parseFloat(El('prova-valor').value);
+      const numQuestoes = parseInt(El('prova-num-questoes').value);
+      const opcoesQtd = parseInt(El('prova-opcoes-qtd').value);
+      const formato = El('prova-formato').value;
+      const colunas = parseInt(El('prova-colunas').value);
+      const turmasSelecionadas = Array.from(document.querySelectorAll('.turma-checkbox:checked')).map(cb => cb.value);
+
+      if (!nome || !(valor > 0)) { alert('Informe o nome e um valor total válido para a prova.'); return; }
+      if (!(numQuestoes >= 1 && numQuestoes <= 100)) { alert('A quantidade de questões deve ficar entre 1 e 100.'); return; }
+      if (turmasSelecionadas.length === 0) { alert('Selecione pelo menos uma turma para a prova.'); return; }
+
+      const lay = layoutProva({ numQuestoes, colunas });
+      if (lay.alturaLinha < 5.5) {
+        alert('Há questões demais para este número de colunas caberem na folha A4 com leitura confiável. Aumente o número de colunas.');
+        return;
+      }
+
+      const gabaritoOficial = {};
+      document.querySelectorAll('.gabarito-resposta-select').forEach(sel => {
+        gabaritoOficial[sel.dataset.questao] = sel.value;
+      });
+
+      state.provas.push({
+        id: 'prova_' + Date.now(),
+        nome, valor, numQuestoes, opcoesQtd, formato, colunas,
+        turmasIds: turmasSelecionadas,
+        gabaritoOficial
+      });
+      salvarEstado();
+      renderProvas();
+      alert('Prova cadastrada com sucesso!');
+    }
+
+    function renderProvas() {
+      const container = El('lista-provas');
+      container.innerHTML = '';
+
+      if (state.provas.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500 py-4 text-center">Nenhuma prova cadastrada.</p>';
+        return;
+      }
+
+      state.provas.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'py-4 flex flex-col md:flex-row md:items-center justify-between gap-3';
+        div.innerHTML = `
+          <div>
+            <h4 class="font-bold text-blue-900">${esc(p.nome)}</h4>
+            <p class="text-xs text-gray-600">Pontos: ${p.valor} | Questões: ${p.numQuestoes} | Turmas: ${p.turmasIds.length}</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="gerarPDFGabaritosIndividuais('${p.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs font-semibold flex items-center">
+              <i class="fa-solid fa-print mr-1"></i> Imprimir Gabaritos (PDF A4)
+            </button>
+            <button onclick="excluirProva('${p.id}')" class="text-red-600 hover:text-red-800 text-xs font-semibold px-2">
+              <i class="fa-solid fa-trash"></i> Excluir
+            </button>
+          </div>`;
+        container.appendChild(div);
+      });
+    }
+
+    function excluirProva(id) {
+      if (confirm('Excluir esta prova? As correções associadas também serão apagadas.')) {
+        state.provas = state.provas.filter(p => p.id !== id);
+        state.respostas = state.respostas.filter(r => r.provaId !== id);
+        salvarEstado();
+        renderProvas();
+      }
+    }
+
+    // =========================================================================
+    // 4. GERAÇÃO DOS GABARITOS (PDF A4)
+    // =========================================================================
+    function montarFolhaHTML(prova, aluno, turma, qrId) {
+      const lay = layoutProva(prova);
+      const dim = dimensoesBolha(prova.formato);
+      const radius = prova.formato === 'quadrado' ? '0' : '50%';
+      const letras = ['A', 'B', 'C', 'D', 'E'].slice(0, prova.opcoesQtd);
+      const m = FOLHA.marcadorTam;
+
+      // marcadores de canto (usados pela câmera para alinhar a folha)
+      let html = FOLHA.marcadores.map(([cx, cy]) =>
+        `<div style="position:absolute;left:${cx - m / 2}mm;top:${cy - m / 2}mm;width:${m}mm;height:${m}mm;background:#000;"></div>`
+      ).join('');
+
+      // cabeçalho
+      html += `
+        <div style="position:absolute;left:24mm;top:12mm;width:130mm;font-family:Arial,sans-serif;">
+          <div style="font-size:14px;font-weight:bold;text-transform:uppercase;">Escola Estadual São Tomaz de Aquino</div>
+          <div style="font-size:12px;margin-top:3px;"><b>Avaliação:</b> ${esc(prova.nome)}</div>
+          <div style="font-size:12px;margin-top:2px;"><b>Aluno:</b> ${esc(aluno.nome)}</div>
+          <div style="font-size:12px;margin-top:2px;"><b>Turma:</b> ${turma ? esc(turma.nome) : ''}</div>
+          <div style="font-size:9px;margin-top:6px;color:#333;">Preencha completamente a bolha da resposta com caneta preta ou azul escura. Não rasure nem dobre a folha.</div>
+        </div>
+        <div id="${qrId}" class="qr-box" style="position:absolute;left:${FOLHA.qr.x}mm;top:${FOLHA.qr.y}mm;width:${FOLHA.qr.tam}mm;height:${FOLHA.qr.tam}mm;"></div>
+        <div style="position:absolute;left:20mm;right:20mm;top:${FOLHA.topo - 9}mm;border-top:1px solid #000;"></div>`;
+
+      // letras no topo de cada coluna
+      for (let c = 0; c < lay.cols; c++) {
+        letras.forEach((l, j) => {
+          const x = FOLHA.margemX + c * lay.larguraCol + FOLHA.deslocX + j * FOLHA.espacoBolha;
+          html += `<div style="position:absolute;left:${x - 3}mm;top:${FOLHA.topo - 7}mm;width:6mm;text-align:center;font:bold 10px Arial;">${l}</div>`;
+        });
+      }
+
+      // números e bolhas
+      for (let q = 1; q <= prova.numQuestoes; q++) {
+        const c0 = centroBolha(prova, lay, q, 0);
+        html += `<div style="position:absolute;left:${c0.x - FOLHA.deslocX}mm;top:${c0.y - 2}mm;width:10mm;text-align:right;font:bold 11px Arial;line-height:4mm;">${q}.</div>`;
+        for (let j = 0; j < letras.length; j++) {
+          const c = centroBolha(prova, lay, q, j);
+          html += `<div style="position:absolute;left:${c.x - dim.w / 2}mm;top:${c.y - dim.h / 2}mm;width:${dim.w}mm;height:${dim.h}mm;box-sizing:border-box;border:0.4mm solid #000;border-radius:${radius};"></div>`;
+        }
+      }
+
+      // assinatura
+      html += `
+        <div style="position:absolute;left:40mm;right:40mm;top:272mm;border-top:1px dashed #000;"></div>
+        <div style="position:absolute;left:40mm;right:40mm;top:273.5mm;text-align:center;font:bold 10px Arial;text-transform:uppercase;">Assinatura do Aluno: ${esc(aluno.nome)}</div>`;
+
+      return html;
+    }
+
+    function aguardarQRCodes(container, timeoutMs = 8000) {
+      return new Promise(resolve => {
+        const inicio = Date.now();
+        (function checar() {
+          const boxes = container.querySelectorAll('.qr-box');
+          const prontos = Array.from(boxes).every(b => {
+            const img = b.querySelector('img');
+            return img && img.getAttribute('src');
+          });
+          if (prontos || Date.now() - inicio > timeoutMs) resolve();
+          else setTimeout(checar, 80);
+        })();
+      });
+    }
+
+    async function gerarPDFGabaritosIndividuais(provaId) {
+      const prova = state.provas.find(p => p.id === provaId);
+      if (!prova) return;
+
+      const alunos = state.alunos
+        .filter(a => prova.turmasIds.includes(a.turmaId))
+        .sort((a, b) => {
+          const ta = state.turmas.find(t => t.id === a.turmaId), tb = state.turmas.find(t => t.id === b.turmaId);
+          const c = (ta ? ta.nome : '').localeCompare(tb ? tb.nome : '', 'pt-BR', { numeric: true });
+          return c || a.nome.localeCompare(b.nome, 'pt-BR');
+        });
+
+      if (alunos.length === 0) {
+        alert('Nenhum aluno encontrado nas turmas selecionadas para esta prova.');
+        return;
+      }
+
+      const container = El('impressao-gabaritos-container');
+      const overlay = El('overlay-pdf');
+      container.innerHTML = '';
+      container.style.display = 'block';
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      window.scrollTo(0, 0);
+
+      try {
+        alunos.forEach((aluno, i) => {
+          const turma = state.turmas.find(t => t.id === aluno.turmaId);
+          const qrId = `qrcode-${aluno.id}-${prova.id}`;
+
+          const folha = document.createElement('div');
+          folha.className = 'folha-a4';
+          folha.style.cssText = 'position:relative;width:210mm;height:296mm;overflow:hidden;background:#fff;box-sizing:border-box;' +
+            (i < alunos.length - 1 ? 'page-break-after:always;' : '');
+          folha.innerHTML = montarFolhaHTML(prova, aluno, turma, qrId);
+          container.appendChild(folha);
+
+          // QR Code com o payload (aluno + prova)
+          new QRCode(document.getElementById(qrId), {
+            text: JSON.stringify({ alunoId: aluno.id, provaId: prova.id }),
+            width: 160,
+            height: 160,
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        });
+
+        await aguardarQRCodes(container);
+
+        await html2pdf().set({
+          margin: 0,
+          filename: `Gabaritos_${prova.nome.replace(/[^\w\-]+/g, '_')}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, scrollX: 0, scrollY: 0, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css'] }
+        }).from(container).save();
+      } catch (err) {
+        alert('Erro ao gerar o PDF: ' + (err && err.message ? err.message : err));
+      } finally {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+      }
+    }
+
+    // =========================================================================
+    // 5. LEITOR ÓPTICO
+    // =========================================================================
+    let videoStream = null;
+    let scanState = 'IDLE'; // IDLE | WAITING_QR | CONFIRMING | READING_ANSWERS
+    let qrTempData = null;
+
+    function setStatus(html) { El('scanner-status').innerHTML = html; }
+
+    function iniciarLeitorEtapa1() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert('Câmera indisponível. Abra a página via HTTPS (ou localhost) em um navegador compatível.');
+        return;
+      }
+      if (state.provas.length === 0) { alert('Cadastre ao menos uma prova antes de usar o leitor.'); return; }
+
+      scanState = 'WAITING_QR';
+      qrTempData = null;
+      El('resultado-wrap').classList.add('hidden');
+      El('overlay-texto').innerText = 'Aponte para o QR Code';
+      setStatus('Aponte a câmera para o QR Code no topo da folha do aluno.');
+
+      const video = El('webcam');
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } }).then(stream => {
+        videoStream = stream;
+        video.srcObject = stream;
+        video.setAttribute('playsinline', true);
+        video.play();
+        El('btn-iniciar-camera').classList.add('hidden');
+        El('btn-parar-camera').classList.remove('hidden');
+        El('btn-parar-camera').classList.add('flex');
+        requestAnimationFrame(tickScanner);
+      }).catch(err => {
+        scanState = 'IDLE';
+        alert('Erro ao acessar a câmera: ' + err.message);
+      });
+    }
+
+    function pararCamera() {
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+      }
+      El('webcam').srcObject = null;
+      El('btn-iniciar-camera').classList.remove('hidden');
+      El('btn-parar-camera').classList.add('hidden');
+      El('btn-parar-camera').classList.remove('flex');
+      El('btn-capturar').classList.add('hidden');
+      El('btn-capturar').classList.remove('flex');
+      El('modal-confirmacao').classList.add('hidden');
+      if (scanState !== 'IDLE') setStatus('Leitor desligado.');
+      scanState = 'IDLE';
+    }
+
+    function tickScanner() {
+      if (!videoStream || scanState === 'IDLE') return;
+
+      const video = El('webcam');
+      if (video.readyState === video.HAVE_ENOUGH_DATA && scanState === 'WAITING_QR' && video.videoWidth) {
+        const canvas = El('scanner-canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const esc_ = Math.min(1, 900 / video.videoWidth);
+        canvas.width = Math.round(video.videoWidth * esc_);
+        canvas.height = Math.round(video.videoHeight * esc_);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+
+        if (code && code.data) {
+          try {
+            const data = JSON.parse(code.data);
+            if (data.alunoId && data.provaId) {
+              const aluno = state.alunos.find(a => a.id === data.alunoId);
+              const prova = state.provas.find(p => p.id === data.provaId);
+              if (aluno && prova) {
+                qrTempData = { aluno, prova };
+                scanState = 'CONFIRMING';
+                exibirModalConfirmacao(aluno, prova);
+              } else {
+                setStatus('<span class="text-red-700">QR Code reconhecido, mas aluno/prova não existe mais no sistema.</span>');
+              }
+            }
+          } catch (e) { /* QR Code de outro padrão */ }
+        }
+      }
+      requestAnimationFrame(tickScanner);
+    }
+
+    function exibirModalConfirmacao(aluno, prova) {
+      const turma = state.turmas.find(t => t.id === aluno.turmaId);
+      El('modal-aluno-nome').innerText = aluno.nome;
+      El('modal-aluno-turma').innerText = turma ? turma.nome : 'Sem Turma';
+      El('modal-prova-nome').innerText = prova.nome;
+      El('modal-confirmacao').classList.remove('hidden');
+    }
+
+    function cancelarConfirmacaoModal() {
+      El('modal-confirmacao').classList.add('hidden');
+      scanState = 'WAITING_QR';
+      setStatus('Aponte a câmera para o QR Code no topo da folha do aluno.');
+    }
+
+    function confirmarAlunoEProcederLeitura() {
+      El('modal-confirmacao').classList.add('hidden');
+      scanState = 'READING_ANSWERS';
+      El('overlay-texto').innerText = 'Enquadre a folha INTEIRA (4 cantos pretos visíveis)';
+      El('btn-capturar').classList.remove('hidden');
+      El('btn-capturar').classList.add('flex');
+      setStatus(`Aluno confirmado: <strong>${esc(qrTempData.aluno.nome)}</strong>.<br>Afaste a câmera até a folha inteira aparecer (com os 4 quadrados pretos dos cantos), com boa luz e sem sombras, e toque em <b>Capturar e Ler Respostas</b>.`);
+    }
+
+    // ---------- Utilitários de visão computacional ----------
+    function otsu(gray) {
+      const hist = new Uint32Array(256);
+      for (let i = 0; i < gray.length; i++) hist[gray[i]]++;
+      const total = gray.length;
+      let sum = 0;
+      for (let t = 0; t < 256; t++) sum += t * hist[t];
+      let sumB = 0, wB = 0, max = 0, thr = 128;
+      for (let t = 0; t < 256; t++) {
+        wB += hist[t];
+        if (!wB) continue;
+        const wF = total - wB;
+        if (!wF) break;
+        sumB += t * hist[t];
+        const mB = sumB / wB, mF = (sum - sumB) / wF;
+        const v = wB * wF * (mB - mF) * (mB - mF);
+        if (v > max) { max = v; thr = t; }
+      }
+      return thr;
+    }
+
+    // Componentes conexos escuros -> candidatos a marcador de canto
+    function acharMarcadores(gray, W, H, thr) {
+      const N = W * H;
+      const visitado = new Uint8Array(N);
+      const pilha = new Int32Array(N);
+      const candidatos = [];
+      const minA = N * 0.00012, maxA = N * 0.02;
+
+      for (let i = 0; i < N; i++) {
+        if (visitado[i] || gray[i] >= thr) continue;
+        let topo = 0;
+        pilha[topo++] = i;
+        visitado[i] = 1;
+        let area = 0, sx = 0, sy = 0, minx = W, maxx = 0, miny = H, maxy = 0;
+        while (topo > 0) {
+          const p = pilha[--topo];
+          const x = p % W, y = (p / W) | 0;
+          area++; sx += x; sy += y;
+          if (x < minx) minx = x; if (x > maxx) maxx = x;
+          if (y < miny) miny = y; if (y > maxy) maxy = y;
+          if (x > 0     && !visitado[p - 1] && gray[p - 1] < thr) { visitado[p - 1] = 1; pilha[topo++] = p - 1; }
+          if (x < W - 1 && !visitado[p + 1] && gray[p + 1] < thr) { visitado[p + 1] = 1; pilha[topo++] = p + 1; }
+          if (y > 0     && !visitado[p - W] && gray[p - W] < thr) { visitado[p - W] = 1; pilha[topo++] = p - W; }
+          if (y < H - 1 && !visitado[p + W] && gray[p + W] < thr) { visitado[p + W] = 1; pilha[topo++] = p + W; }
+        }
+        if (area < minA || area > maxA) continue;
+        const bw = maxx - minx + 1, bh = maxy - miny + 1;
+        const asp = bw / bh, fill = area / (bw * bh);
+        if (asp < 0.7 || asp > 1.43 || fill < 0.82) continue;
+        candidatos.push({ x: sx / area, y: sy / area, area });
+      }
+      return candidatos;
+    }
+
+    function escolherCantos(c) {
+      if (c.length < 4) return null;
+      const por = f => c.reduce((m, p) => (f(p) < f(m) ? p : m));
+      const TL = por(p => p.x + p.y);
+      const BR = por(p => -(p.x + p.y));
+      const TR = por(p => -(p.x - p.y));
+      const BL = por(p => p.x - p.y);
+      const set = new Set([TL, TR, BR, BL]);
+      if (set.size < 4) return null;
+      return [TL, TR, BR, BL];
+    }
+
+    // Homografia: src[i] (mm) -> dst[i] (px)
+    function calcularHomografia(src, dst) {
+      const A = [], b = [];
+      for (let i = 0; i < 4; i++) {
+        const [x, y] = src[i], [u, v] = dst[i];
+        A.push([x, y, 1, 0, 0, 0, -x * u, -y * u]); b.push(u);
+        A.push([0, 0, 0, x, y, 1, -x * v, -y * v]); b.push(v);
+      }
+      const n = 8;
+      for (let i = 0; i < n; i++) {
+        let piv = i;
+        for (let r = i + 1; r < n; r++) if (Math.abs(A[r][i]) > Math.abs(A[piv][i])) piv = r;
+        [A[i], A[piv]] = [A[piv], A[i]]; [b[i], b[piv]] = [b[piv], b[i]];
+        if (Math.abs(A[i][i]) < 1e-12) return null;
+        for (let r = i + 1; r < n; r++) {
+          const f = A[r][i] / A[i][i];
+          for (let k = i; k < n; k++) A[r][k] -= f * A[i][k];
+          b[r] -= f * b[i];
+        }
+      }
+      const h = new Array(n);
+      for (let i = n - 1; i >= 0; i--) {
+        let s = b[i];
+        for (let k = i + 1; k < n; k++) s -= A[i][k] * h[k];
+        h[i] = s / A[i][i];
+      }
+      return h;
+    }
+
+    function aplicarH(h, x, y) {
+      const d = h[6] * x + h[7] * y + 1;
+      return [(h[0] * x + h[1] * y + h[2]) / d, (h[3] * x + h[4] * y + h[5]) / d];
+    }
+
+    function capturarELerRespostas() {
+      if (scanState !== 'READING_ANSWERS' || !qrTempData) return;
+      const { aluno, prova } = qrTempData;
+      const video = El('webcam');
+      if (!video.videoWidth) { setStatus('Câmera ainda não está pronta.'); return; }
+
+      // Captura a imagem (reduzida para no máx. 1400px no maior lado)
+      const esc_ = Math.min(1, 1400 / Math.max(video.videoWidth, video.videoHeight));
+      const W = Math.round(video.videoWidth * esc_), H = Math.round(video.videoHeight * esc_);
+      const canvas = El('scanner-canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(video, 0, 0, W, H);
+      const img = ctx.getImageData(0, 0, W, H);
+
+      const gray = new Uint8Array(W * H);
+      for (let i = 0, p = 0; i < gray.length; i++, p += 4) {
+        gray[i] = (img.data[p] * 0.299 + img.data[p + 1] * 0.587 + img.data[p + 2] * 0.114) | 0;
+      }
+
+      const thr = otsu(gray);
+      const cantos = escolherCantos(acharMarcadores(gray, W, H, thr));
+      if (!cantos) {
+        setStatus('<span class="text-red-700 font-bold">Não consegui localizar os 4 quadrados pretos dos cantos.</span><br>Afaste a câmera para a folha inteira aparecer, melhore a luz, evite sombras e tente novamente.');
+        return;
+      }
+
+      const H_ = calcularHomografia(FOLHA.marcadores, cantos.map(c => [c.x, c.y]));
+      if (!H_) { setStatus('<span class="text-red-700">Falha ao alinhar a folha. Tente novamente.</span>'); return; }
+
+      const distTop = Math.hypot(cantos[1].x - cantos[0].x, cantos[1].y - cantos[0].y);
+      const pxPorMm = distTop / (FOLHA.marcadores[1][0] - FOLHA.marcadores[0][0]);
+      const raio = 1.6 * pxPorMm;
+      const lay = layoutProva(prova);
+
+      const lidas = {};
+      const pontos = [];
+      let acertos = 0, brancas = 0, multiplas = 0;
+      const letras = ['A', 'B', 'C', 'D', 'E'].slice(0, prova.opcoesQtd);
+
+      for (let q = 1; q <= prova.numQuestoes; q++) {
+        const marcadas = [];
+        for (let j = 0; j < letras.length; j++) {
+          const c = centroBolha(prova, lay, q, j);
+          const [u, v] = aplicarH(H_, c.x, c.y);
+          let escuros = 0, total = 0;
+          const r = Math.ceil(raio);
+          for (let dy = -r; dy <= r; dy++) {
+            for (let dx = -r; dx <= r; dx++) {
+              if (dx * dx + dy * dy > raio * raio) continue;
+              const px = Math.round(u + dx), py = Math.round(v + dy);
+              if (px < 0 || py < 0 || px >= W || py >= H) continue;
+              total++;
+              if (gray[py * W + px] < thr) escuros++;
+            }
+          }
+          const razao = total ? escuros / total : 0;
+          const marcada = razao >= 0.5;
+          if (marcada) marcadas.push(letras[j]);
+          pontos.push({ u, v, r: raio, marcada });
+        }
+        let resp;
+        if (marcadas.length === 0) { resp = '-'; brancas++; }
+        else if (marcadas.length > 1) { resp = 'X'; multiplas++; }
+        else resp = marcadas[0];
+        lidas[q] = resp;
+        if (resp === prova.gabaritoOficial[q]) acertos++;
+      }
+
+      const total = prova.numQuestoes;
+      const notaFinal = Number(((acertos / total) * prova.valor).toFixed(2));
+
+      // CORREÇÃO: era prova.provaId (undefined); o correto é prova.id
+      const idx = state.respostas.findIndex(r => r.alunoId === aluno.id && r.provaId === prova.id);
+      const registro = {
+        alunoId: aluno.id, provaId: prova.id,
+        nota: notaFinal, acertos, totalQuestoes: total, lidas,
+        data: new Date().toLocaleDateString('pt-BR')
+      };
+      if (idx !== -1) state.respostas[idx] = registro; else state.respostas.push(registro);
+      salvarEstado();
+
+      desenharResultado(canvas, cantos, pontos, lidas, prova);
+
+      let avisos = '';
+      if (brancas) avisos += `<br><span class="text-yellow-700">${brancas} questão(ões) em branco.</span>`;
+      if (multiplas) avisos += `<br><span class="text-yellow-700">${multiplas} questão(ões) com mais de uma marcação (contam como erro).</span>`;
+
+      setStatus(`
+        <span class="text-green-700 font-bold"><i class="fa-solid fa-circle-check mr-1"></i> Leitura concluída e nota salva!</span><br>
+        Aluno: <strong>${esc(aluno.nome)}</strong> | Acertos: <strong>${acertos}/${total}</strong> | Nota: <strong>${notaFinal} / ${prova.valor}</strong>${avisos}
+        <br><span class="text-xs font-normal text-gray-600">Confira abaixo se as marcações lidas conferem com a folha. Para o próximo aluno, aponte para o novo QR Code.</span>`);
+
+      // volta para a etapa 1
+      scanState = 'WAITING_QR';
+      qrTempData = null;
+      El('btn-capturar').classList.add('hidden');
+      El('btn-capturar').classList.remove('flex');
+      El('overlay-texto').innerText = 'Aponte para o QR Code';
+    }
+
+    function desenharResultado(srcCanvas, cantos, pontos, lidas, prova) {
+      const out = El('resultado-canvas');
+      out.width = srcCanvas.width; out.height = srcCanvas.height;
+      const c = out.getContext('2d');
+      c.drawImage(srcCanvas, 0, 0);
+      c.lineWidth = Math.max(2, srcCanvas.width / 400);
+      pontos.forEach(p => {
+        c.beginPath();
+        c.arc(p.u, p.v, p.r, 0, Math.PI * 2);
+        c.strokeStyle = p.marcada ? '#16a34a' : 'rgba(150,150,150,0.8)';
+        c.stroke();
+      });
+      c.strokeStyle = '#dc2626';
+      cantos.forEach(k => c.strokeRect(k.x - 8, k.y - 8, 16, 16));
+
+      const det = El('resultado-detalhes');
+      det.innerHTML = '';
+      for (let q = 1; q <= prova.numQuestoes; q++) {
+        const ok = lidas[q] === prova.gabaritoOficial[q];
+        const d = document.createElement('div');
+        d.className = 'px-1 py-0.5 rounded border ' + (ok ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800');
+        d.textContent = `${q}: ${lidas[q]} (${prova.gabaritoOficial[q]})`;
+        det.appendChild(d);
+      }
+      El('resultado-wrap').classList.remove('hidden');
+    }
+
+    // =========================================================================
+    // 6. RELATÓRIOS
+    // =========================================================================
+    function populateRelatoriosSelects() {
+      const sp = El('relatorio-prova-select'), st = El('relatorio-turma-select');
+      const vp = sp.value, vt = st.value;
+      sp.innerHTML = state.provas.map(p => `<option value="${p.id}">${esc(p.nome)}</option>`).join('') || '<option value="">Nenhuma prova cadastrada</option>';
+      st.innerHTML = ordenarTurmas(state.turmas).map(t => `<option value="${t.id}">${esc(t.nome)}</option>`).join('') || '<option value="">Nenhuma turma cadastrada</option>';
+      if (vp) sp.value = vp;
+      if (vt) st.value = vt;
+    }
+
+    function renderRelatorioNotas() {
+      const provaId = El('relatorio-prova-select').value;
+      const turmaId = El('relatorio-turma-select').value;
+      const tbody = El('tabela-notas-body');
+      tbody.innerHTML = '';
+
+      const prova = state.provas.find(p => p.id === provaId);
+      const turma = state.turmas.find(t => t.id === turmaId);
+
+      El('relatorio-header-turma').innerText = `Turma: ${turma ? turma.nome : '-'}`;
+      El('relatorio-header-prova').innerText = `Avaliação: ${prova ? prova.nome : '-'}`;
+
+      if (!prova || !turma) {
+        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Selecione a turma e a prova.</td></tr>';
+        return;
+      }
+
+      const alunosTurma = state.alunos.filter(a => a.turmaId === turmaId).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+      if (alunosTurma.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Nenhum aluno cadastrado nesta turma.</td></tr>';
+        return;
+      }
+
+      alunosTurma.forEach((aluno, idx) => {
+        const resp = state.respostas.find(r => r.alunoId === aluno.id && r.provaId === provaId);
+        const tr = document.createElement('tr');
+        tr.className = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+
+        let status = '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">Pendente</span>';
+        let acertos = '-', nota = '-';
+        if (resp) {
+          status = '<span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">Corrigido</span>';
+          acertos = `${resp.acertos}/${resp.totalQuestoes}`;
+          nota = `<strong>${resp.nota}</strong> / ${prova.valor}`;
+        }
+
+        tr.innerHTML = `
+          <td class="border p-2 text-center text-xs font-bold">${idx + 1}</td>
+          <td class="border p-3 font-medium text-gray-800">${esc(aluno.nome)}</td>
+          <td class="border p-3 text-center">${status}</td>
+          <td class="border p-3 text-center">${acertos}</td>
+          <td class="border p-3 text-center">${nota}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function gerarPDFPlanilhaNotas() {
+      const turma = state.turmas.find(t => t.id === El('relatorio-turma-select').value);
+      html2pdf().set({
+        margin: 10,
+        filename: `Planilha_Notas_${(turma ? turma.nome : 'Turma').replace(/[^\w\-]+/g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }).from(El('area-planilha-pdf')).save();
+    }
+
+    // INICIALIZAÇÃO
+    document.addEventListener('DOMContentLoaded', function () {
+      renderTurmas();
+    });
+  </script>
+</body>
+</html>
